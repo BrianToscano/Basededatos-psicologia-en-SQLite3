@@ -1,57 +1,94 @@
-# 🧠 Proyecto Psico DB (SQLite)
+import sqlite3
+import os
 
-Este repositorio contiene el script Python necesario para inicializar una base de datos SQLite con una tabla de términos clave de la psicología y sus datos asociados.
+# 1. Definición de la base de datos y la tabla
+DB_NAME = 'psico.db'
+TABLE_NAME = 'palabras_psicologia'
 
-## 📋 Contenido de la Base de Datos
+# Los datos que quieres insertar
+datos_psicologia = [
+    ('Cognición', 95.5, 'pensamiento, comprensión, conocimiento'),
+    ('Conducta', 90.0, 'comportamiento, actitud, acción'),
+    ('Emoción', 92.3, 'sentimiento, afecto, ánimo'),
+    ('Motivación', 87.2, 'impulso, deseo, incentivo'),
+    ('Percepción', 85.6, 'sensación, interpretación, apreciación'),
+    ('Aprendizaje', 98.0, 'educación, conocimiento, adquisición'),
+    ('Memoria', 94.1, 'recuerdo, retención, evocación'),
+    ('Atención', 89.5, 'concentración, enfoque, observación'),
+    ('Personalidad', 91.2, 'carácter, temperamento, identidad'),
+    ('Trauma', 88.4, 'herida emocional, impacto, shock'),
+    ('Depresión', 97.8, 'tristeza, desánimo, melancolía'),
+    ('Ansiedad', 96.5, 'nerviosismo, preocupación, tensión'),
+    ('Terapia', 93.7, 'tratamiento, intervención, ayuda'),
+    ('Inteligencia', 90.9, 'razonamiento, comprensión, habilidad'),
+    ('Bienestar', 89.0, 'salud mental, equilibrio, satisfacción'),
+]
 
-El objetivo de este script es crear el archivo de base de datos `psico.db` e insertar la tabla `palabras_psicologia`.
+def crear_y_cargar_db():
+    """Conecta, crea la tabla e inserta los datos."""
+    try:
+        # La función connect() crea el archivo DB si no existe
+        conn = sqlite3.connect(DB_NAME)
+        cursor = conn.cursor()
+        print(f"Conexión exitosa a la base de datos: {DB_NAME}")
 
-### Estructura de la Tabla `palabras_psicologia`
+        # 2. Crear la tabla
+        # Usamos IF NOT EXISTS para que no dé error si la ejecutas varias veces
+        # Añadimos UNIQUE a 'palabra' para evitar duplicados en la inserción
+        cursor.execute(f"""
+            CREATE TABLE IF NOT EXISTS {TABLE_NAME} (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                palabra TEXT NOT NULL UNIQUE,
+                porcentaje_identidad REAL NOT NULL,
+                sinonimos TEXT
+            )
+        """)
+        print(f"Tabla '{TABLE_NAME}' creada o ya existe.")
 
-| Columna | Tipo de Dato | Descripción |
-| :--- | :--- | :--- |
-| `id` | `INTEGER` | Clave Primaria (Autoincremental) |
-| `palabra` | `TEXT` | Término psicológico clave (Único) |
-| `porcentaje_identidad` | `REAL` | Valor numérico asociado al término |
-| `sinonimos` | `TEXT` | Lista de sinónimos del término |
+        # 3. Insertar los datos
+        # La sentencia INSERT OR IGNORE previene duplicados usando la restricción UNIQUE en 'palabra'
+        insert_sql = f"""
+            INSERT OR IGNORE INTO {TABLE_NAME} (palabra, porcentaje_identidad, sinonimos)
+            VALUES (?, ?, ?)
+        """
+        
+        # Ejecutar la inserción para todos los datos a la vez
+        cursor.executemany(insert_sql, datos_psicologia)
+        
+        # Confirmar los cambios
+        conn.commit()
+        print(f"Se intentaron insertar {len(datos_psicologia)} registros. Cambios guardados.")
+        
+    except sqlite3.Error as e:
+        print(f"Ocurrió un error de SQLite: {e}")
+    finally:
+        # 4. Cerrar la conexión
+        if conn:
+            conn.close()
+            print("Conexión a la DB cerrada.")
 
-### Ejemplos de Datos Incluidos
+def verificar_datos():
+    """Verifica si los datos se insertaron correctamente."""
+    try:
+        conn = sqlite3.connect(DB_NAME)
+        cursor = conn.cursor()
+        
+        cursor.execute(f"SELECT * FROM {TABLE_NAME} LIMIT 5")
+        filas = cursor.fetchall()
+        
+        print("\n--- Verificación de Datos (Primeras 5 filas) ---")
+        if filas:
+            for fila in filas:
+                print(fila)
+        else:
+            print("No se encontraron datos en la tabla.")
+            
+    except sqlite3.Error as e:
+        print(f"Ocurrió un error al leer la base de datos: {e}")
+    finally:
+        if conn:
+            conn.close()
 
-| Palabra | Porcentaje Identidad | Sinónimos |
-| :--- | :--- | :--- |
-| `Cognición` | 95.5 | pensamiento, comprensión, conocimiento |
-| `Depresión` | 97.8 | tristeza, desánimo, melancolía |
-| `Terapia` | 93.7 | tratamiento, intervención, ayuda |
-
----
-
-## 💻 Requisitos
-
-* **Python 3.x**
-* **Librería `sqlite3`** (Viene incluida en la instalación estándar de Python)
-
-## 🚀 Uso del Script
-
-Sigue estos pasos para generar la base de datos:
-
-1.  **Clonar el repositorio** (si aún no lo has hecho):
-    ```bash
-    git clone [https://www.youtube.com/watch?v=eQMcIGVc8N0](https://www.youtube.com/watch?v=eQMcIGVc8N0)
-    cd psico
-    ```
-
-2.  **Ejecutar el script principal** (`db_init.py` o el nombre que le hayas dado):
-    ```bash
-    python db_init.py
-    ```
-
-3.  **Resultado:** Al ejecutar el script, se generará el archivo `psico.db` en el mismo directorio.
-
----
-
-## 📄 Archivos Clave
-
-* `db_init.py` (o el nombre de tu script): Contiene la lógica para conectar con SQLite, crear la tabla e insertar los datos iniciales.
-* `.gitignore`: Excluye el archivo `psico.db` y otros archivos temporales para mantener el repositorio limpio.
-
----
+if __name__ == "__main__":
+    crear_y_cargar_db()
+    verificar_datos()
